@@ -7,7 +7,6 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"go_echo_ent/ent/car"
 	"go_echo_ent/ent/group"
 	"go_echo_ent/ent/predicate"
 	"go_echo_ent/ent/user"
@@ -27,8 +26,8 @@ type UserQuery struct {
 	unique     []string
 	predicates []predicate.User
 	// eager-loading edges.
-	withCars   *CarQuery
-	withGroups *GroupQuery
+	withGroups  *GroupQuery
+	withFriends *UserQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,24 +57,6 @@ func (uq *UserQuery) Order(o ...OrderFunc) *UserQuery {
 	return uq
 }
 
-// QueryCars chains the current query on the cars edge.
-func (uq *UserQuery) QueryCars() *CarQuery {
-	query := &CarQuery{config: uq.config}
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := uq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, uq.sqlQuery()),
-			sqlgraph.To(car.Table, car.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.CarsTable, user.CarsColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryGroups chains the current query on the groups edge.
 func (uq *UserQuery) QueryGroups() *GroupQuery {
 	query := &GroupQuery{config: uq.config}
@@ -86,7 +67,25 @@ func (uq *UserQuery) QueryGroups() *GroupQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, uq.sqlQuery()),
 			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, user.GroupsTable, user.GroupsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GroupsTable, user.GroupsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryFriends chains the current query on the friends edge.
+func (uq *UserQuery) QueryFriends() *UserQuery {
+	query := &UserQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, uq.sqlQuery()),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, user.FriendsTable, user.FriendsPrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -273,17 +272,6 @@ func (uq *UserQuery) Clone() *UserQuery {
 	}
 }
 
-//  WithCars tells the query-builder to eager-loads the nodes that are connected to
-// the "cars" edge. The optional arguments used to configure the query builder of the edge.
-func (uq *UserQuery) WithCars(opts ...func(*CarQuery)) *UserQuery {
-	query := &CarQuery{config: uq.config}
-	for _, opt := range opts {
-		opt(query)
-	}
-	uq.withCars = query
-	return uq
-}
-
 //  WithGroups tells the query-builder to eager-loads the nodes that are connected to
 // the "groups" edge. The optional arguments used to configure the query builder of the edge.
 func (uq *UserQuery) WithGroups(opts ...func(*GroupQuery)) *UserQuery {
@@ -292,6 +280,17 @@ func (uq *UserQuery) WithGroups(opts ...func(*GroupQuery)) *UserQuery {
 		opt(query)
 	}
 	uq.withGroups = query
+	return uq
+}
+
+//  WithFriends tells the query-builder to eager-loads the nodes that are connected to
+// the "friends" edge. The optional arguments used to configure the query builder of the edge.
+func (uq *UserQuery) WithFriends(opts ...func(*UserQuery)) *UserQuery {
+	query := &UserQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withFriends = query
 	return uq
 }
 
@@ -362,8 +361,8 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
 		loadedTypes = [2]bool{
-			uq.withCars != nil,
 			uq.withGroups != nil,
+			uq.withFriends != nil,
 		}
 	)
 	_spec.ScanValues = func() []interface{} {
@@ -387,7 +386,7 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 		return nodes, nil
 	}
 
-	if query := uq.withCars; query != nil {
+	if query := uq.withGroups; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
 		nodeids := make(map[int]*User)
 		for i := range nodes {
@@ -395,27 +394,27 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 			nodeids[nodes[i].ID] = nodes[i]
 		}
 		query.withFKs = true
-		query.Where(predicate.Car(func(s *sql.Selector) {
-			s.Where(sql.InValues(user.CarsColumn, fks...))
+		query.Where(predicate.Group(func(s *sql.Selector) {
+			s.Where(sql.InValues(user.GroupsColumn, fks...))
 		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			fk := n.user_cars
+			fk := n.user_groups
 			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "user_cars" is nil for node %v`, n.ID)
+				return nil, fmt.Errorf(`foreign-key "user_groups" is nil for node %v`, n.ID)
 			}
 			node, ok := nodeids[*fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "user_cars" returned %v for node %v`, *fk, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "user_groups" returned %v for node %v`, *fk, n.ID)
 			}
-			node.Edges.Cars = append(node.Edges.Cars, n)
+			node.Edges.Groups = append(node.Edges.Groups, n)
 		}
 	}
 
-	if query := uq.withGroups; query != nil {
+	if query := uq.withFriends; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
 		ids := make(map[int]*User, len(nodes))
 		for _, node := range nodes {
@@ -428,12 +427,12 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 		)
 		_spec := &sqlgraph.EdgeQuerySpec{
 			Edge: &sqlgraph.EdgeSpec{
-				Inverse: true,
-				Table:   user.GroupsTable,
-				Columns: user.GroupsPrimaryKey,
+				Inverse: false,
+				Table:   user.FriendsTable,
+				Columns: user.FriendsPrimaryKey,
 			},
 			Predicate: func(s *sql.Selector) {
-				s.Where(sql.InValues(user.GroupsPrimaryKey[1], fks...))
+				s.Where(sql.InValues(user.FriendsPrimaryKey[0], fks...))
 			},
 
 			ScanValues: func() [2]interface{} {
@@ -460,9 +459,9 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 			},
 		}
 		if err := sqlgraph.QueryEdges(ctx, uq.driver, _spec); err != nil {
-			return nil, fmt.Errorf(`query edges "groups": %v`, err)
+			return nil, fmt.Errorf(`query edges "friends": %v`, err)
 		}
-		query.Where(group.IDIn(edgeids...))
+		query.Where(user.IDIn(edgeids...))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
@@ -470,10 +469,10 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 		for _, n := range neighbors {
 			nodes, ok := edges[n.ID]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected "groups" node returned %v`, n.ID)
+				return nil, fmt.Errorf(`unexpected "friends" node returned %v`, n.ID)
 			}
 			for i := range nodes {
-				nodes[i].Edges.Groups = append(nodes[i].Edges.Groups, n)
+				nodes[i].Edges.Friends = append(nodes[i].Edges.Friends, n)
 			}
 		}
 	}

@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"go_echo_ent/ent/car"
 	"go_echo_ent/ent/predicate"
-	"go_echo_ent/ent/user"
-	"time"
 
 	"github.com/facebook/ent/dialect/sql"
 	"github.com/facebook/ent/dialect/sql/sqlgraph"
@@ -29,51 +27,13 @@ func (cu *CarUpdate) Where(ps ...predicate.Car) *CarUpdate {
 	return cu
 }
 
-// SetModel sets the model field.
-func (cu *CarUpdate) SetModel(s string) *CarUpdate {
-	cu.mutation.SetModel(s)
-	return cu
-}
-
-// SetRegisteredAt sets the registered_at field.
-func (cu *CarUpdate) SetRegisteredAt(t time.Time) *CarUpdate {
-	cu.mutation.SetRegisteredAt(t)
-	return cu
-}
-
-// SetOwnerID sets the owner edge to User by id.
-func (cu *CarUpdate) SetOwnerID(id int) *CarUpdate {
-	cu.mutation.SetOwnerID(id)
-	return cu
-}
-
-// SetNillableOwnerID sets the owner edge to User by id if the given value is not nil.
-func (cu *CarUpdate) SetNillableOwnerID(id *int) *CarUpdate {
-	if id != nil {
-		cu = cu.SetOwnerID(*id)
-	}
-	return cu
-}
-
-// SetOwner sets the owner edge to User.
-func (cu *CarUpdate) SetOwner(u *User) *CarUpdate {
-	return cu.SetOwnerID(u.ID)
-}
-
 // Mutation returns the CarMutation object of the builder.
 func (cu *CarUpdate) Mutation() *CarMutation {
 	return cu.mutation
 }
 
-// ClearOwner clears the owner edge to User.
-func (cu *CarUpdate) ClearOwner() *CarUpdate {
-	cu.mutation.ClearOwner()
-	return cu
-}
-
 // Save executes the query and returns the number of rows/vertices matched by this operation.
 func (cu *CarUpdate) Save(ctx context.Context) (int, error) {
-
 	var (
 		err      error
 		affected int
@@ -141,55 +101,6 @@ func (cu *CarUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := cu.mutation.Model(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: car.FieldModel,
-		})
-	}
-	if value, ok := cu.mutation.RegisteredAt(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: car.FieldRegisteredAt,
-		})
-	}
-	if cu.mutation.OwnerCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   car.OwnerTable,
-			Columns: []string{car.OwnerColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: user.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := cu.mutation.OwnerIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   car.OwnerTable,
-			Columns: []string{car.OwnerColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: user.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{car.Label}
@@ -208,51 +119,13 @@ type CarUpdateOne struct {
 	mutation *CarMutation
 }
 
-// SetModel sets the model field.
-func (cuo *CarUpdateOne) SetModel(s string) *CarUpdateOne {
-	cuo.mutation.SetModel(s)
-	return cuo
-}
-
-// SetRegisteredAt sets the registered_at field.
-func (cuo *CarUpdateOne) SetRegisteredAt(t time.Time) *CarUpdateOne {
-	cuo.mutation.SetRegisteredAt(t)
-	return cuo
-}
-
-// SetOwnerID sets the owner edge to User by id.
-func (cuo *CarUpdateOne) SetOwnerID(id int) *CarUpdateOne {
-	cuo.mutation.SetOwnerID(id)
-	return cuo
-}
-
-// SetNillableOwnerID sets the owner edge to User by id if the given value is not nil.
-func (cuo *CarUpdateOne) SetNillableOwnerID(id *int) *CarUpdateOne {
-	if id != nil {
-		cuo = cuo.SetOwnerID(*id)
-	}
-	return cuo
-}
-
-// SetOwner sets the owner edge to User.
-func (cuo *CarUpdateOne) SetOwner(u *User) *CarUpdateOne {
-	return cuo.SetOwnerID(u.ID)
-}
-
 // Mutation returns the CarMutation object of the builder.
 func (cuo *CarUpdateOne) Mutation() *CarMutation {
 	return cuo.mutation
 }
 
-// ClearOwner clears the owner edge to User.
-func (cuo *CarUpdateOne) ClearOwner() *CarUpdateOne {
-	cuo.mutation.ClearOwner()
-	return cuo
-}
-
 // Save executes the query and returns the updated entity.
 func (cuo *CarUpdateOne) Save(ctx context.Context) (*Car, error) {
-
 	var (
 		err  error
 		node *Car
@@ -318,55 +191,6 @@ func (cuo *CarUpdateOne) sqlSave(ctx context.Context) (c *Car, err error) {
 		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Car.ID for update")}
 	}
 	_spec.Node.ID.Value = id
-	if value, ok := cuo.mutation.Model(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: car.FieldModel,
-		})
-	}
-	if value, ok := cuo.mutation.RegisteredAt(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: car.FieldRegisteredAt,
-		})
-	}
-	if cuo.mutation.OwnerCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   car.OwnerTable,
-			Columns: []string{car.OwnerColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: user.FieldID,
-				},
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := cuo.mutation.OwnerIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   car.OwnerTable,
-			Columns: []string{car.OwnerColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: user.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	c = &Car{config: cuo.config}
 	_spec.Assign = c.assignValues
 	_spec.ScanValues = c.scanValues()

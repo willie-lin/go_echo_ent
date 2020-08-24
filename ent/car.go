@@ -5,64 +5,22 @@ package ent
 import (
 	"fmt"
 	"go_echo_ent/ent/car"
-	"go_echo_ent/ent/user"
 	"strings"
-	"time"
 
 	"github.com/facebook/ent/dialect/sql"
 )
 
 // Car is the model entity for the Car schema.
 type Car struct {
-	config `json:"-"`
+	config
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// Model holds the value of the "model" field.
-	Model string `json:"model,omitempty"`
-	// RegisteredAt holds the value of the "registered_at" field.
-	RegisteredAt time.Time `json:"registered_at,omitempty"`
-	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the CarQuery when eager-loading is set.
-	Edges     CarEdges `json:"edges"`
-	user_cars *int
-}
-
-// CarEdges holds the relations/edges for other nodes in the graph.
-type CarEdges struct {
-	// Owner holds the value of the owner edge.
-	Owner *User
-	// loadedTypes holds the information for reporting if a
-	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
-}
-
-// OwnerOrErr returns the Owner value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e CarEdges) OwnerOrErr() (*User, error) {
-	if e.loadedTypes[0] {
-		if e.Owner == nil {
-			// The edge owner was loaded in eager-loading,
-			// but was not found.
-			return nil, &NotFoundError{label: user.Label}
-		}
-		return e.Owner, nil
-	}
-	return nil, &NotLoadedError{edge: "owner"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Car) scanValues() []interface{} {
 	return []interface{}{
-		&sql.NullInt64{},  // id
-		&sql.NullString{}, // model
-		&sql.NullTime{},   // registered_at
-	}
-}
-
-// fkValues returns the types for scanning foreign-keys values from sql.Rows.
-func (*Car) fkValues() []interface{} {
-	return []interface{}{
-		&sql.NullInt64{}, // user_cars
+		&sql.NullInt64{}, // id
 	}
 }
 
@@ -78,31 +36,7 @@ func (c *Car) assignValues(values ...interface{}) error {
 	}
 	c.ID = int(value.Int64)
 	values = values[1:]
-	if value, ok := values[0].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field model", values[0])
-	} else if value.Valid {
-		c.Model = value.String
-	}
-	if value, ok := values[1].(*sql.NullTime); !ok {
-		return fmt.Errorf("unexpected type %T for field registered_at", values[1])
-	} else if value.Valid {
-		c.RegisteredAt = value.Time
-	}
-	values = values[2:]
-	if len(values) == len(car.ForeignKeys) {
-		if value, ok := values[0].(*sql.NullInt64); !ok {
-			return fmt.Errorf("unexpected type %T for edge-field user_cars", value)
-		} else if value.Valid {
-			c.user_cars = new(int)
-			*c.user_cars = int(value.Int64)
-		}
-	}
 	return nil
-}
-
-// QueryOwner queries the owner edge of the Car.
-func (c *Car) QueryOwner() *UserQuery {
-	return (&CarClient{config: c.config}).QueryOwner(c)
 }
 
 // Update returns a builder for updating this Car.
@@ -128,10 +62,6 @@ func (c *Car) String() string {
 	var builder strings.Builder
 	builder.WriteString("Car(")
 	builder.WriteString(fmt.Sprintf("id=%v", c.ID))
-	builder.WriteString(", model=")
-	builder.WriteString(c.Model)
-	builder.WriteString(", registered_at=")
-	builder.WriteString(c.RegisteredAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

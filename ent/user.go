@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go_echo_ent/ent/user"
 	"strings"
+	"time"
 
 	"github.com/facebook/ent/dialect/sql"
 )
@@ -19,6 +20,10 @@ type User struct {
 	Age int `json:"age,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// Username holds the value of the "username" field.
+	Username string `json:"username,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges UserEdges `json:"edges"`
@@ -26,31 +31,31 @@ type User struct {
 
 // UserEdges holds the relations/edges for other nodes in the graph.
 type UserEdges struct {
-	// Cars holds the value of the cars edge.
-	Cars []*Car
 	// Groups holds the value of the groups edge.
 	Groups []*Group
+	// Friends holds the value of the friends edge.
+	Friends []*User
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
 }
 
-// CarsOrErr returns the Cars value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) CarsOrErr() ([]*Car, error) {
-	if e.loadedTypes[0] {
-		return e.Cars, nil
-	}
-	return nil, &NotLoadedError{edge: "cars"}
-}
-
 // GroupsOrErr returns the Groups value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) GroupsOrErr() ([]*Group, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Groups, nil
 	}
 	return nil, &NotLoadedError{edge: "groups"}
+}
+
+// FriendsOrErr returns the Friends value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) FriendsOrErr() ([]*User, error) {
+	if e.loadedTypes[1] {
+		return e.Friends, nil
+	}
+	return nil, &NotLoadedError{edge: "friends"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -59,6 +64,8 @@ func (*User) scanValues() []interface{} {
 		&sql.NullInt64{},  // id
 		&sql.NullInt64{},  // age
 		&sql.NullString{}, // name
+		&sql.NullString{}, // username
+		&sql.NullTime{},   // created_at
 	}
 }
 
@@ -84,17 +91,27 @@ func (u *User) assignValues(values ...interface{}) error {
 	} else if value.Valid {
 		u.Name = value.String
 	}
+	if value, ok := values[2].(*sql.NullString); !ok {
+		return fmt.Errorf("unexpected type %T for field username", values[2])
+	} else if value.Valid {
+		u.Username = value.String
+	}
+	if value, ok := values[3].(*sql.NullTime); !ok {
+		return fmt.Errorf("unexpected type %T for field created_at", values[3])
+	} else if value.Valid {
+		u.CreatedAt = value.Time
+	}
 	return nil
-}
-
-// QueryCars queries the cars edge of the User.
-func (u *User) QueryCars() *CarQuery {
-	return (&UserClient{config: u.config}).QueryCars(u)
 }
 
 // QueryGroups queries the groups edge of the User.
 func (u *User) QueryGroups() *GroupQuery {
 	return (&UserClient{config: u.config}).QueryGroups(u)
+}
+
+// QueryFriends queries the friends edge of the User.
+func (u *User) QueryFriends() *UserQuery {
+	return (&UserClient{config: u.config}).QueryFriends(u)
 }
 
 // Update returns a builder for updating this User.
@@ -124,6 +141,10 @@ func (u *User) String() string {
 	builder.WriteString(fmt.Sprintf("%v", u.Age))
 	builder.WriteString(", name=")
 	builder.WriteString(u.Name)
+	builder.WriteString(", username=")
+	builder.WriteString(u.Username)
+	builder.WriteString(", created_at=")
+	builder.WriteString(u.CreatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

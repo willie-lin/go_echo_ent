@@ -12,39 +12,23 @@ import (
 
 // Group is the model entity for the Group schema.
 type Group struct {
-	config `json:"-"`
+	config
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
-	// Name holds the value of the "name" field.
-	Name string `json:"name,omitempty"`
-	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the GroupQuery when eager-loading is set.
-	Edges GroupEdges `json:"edges"`
-}
-
-// GroupEdges holds the relations/edges for other nodes in the graph.
-type GroupEdges struct {
-	// Users holds the value of the users edge.
-	Users []*User
-	// loadedTypes holds the information for reporting if a
-	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
-}
-
-// UsersOrErr returns the Users value or an error if the edge
-// was not loaded in eager-loading.
-func (e GroupEdges) UsersOrErr() ([]*User, error) {
-	if e.loadedTypes[0] {
-		return e.Users, nil
-	}
-	return nil, &NotLoadedError{edge: "users"}
+	ID          int `json:"id,omitempty"`
+	user_groups *int
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Group) scanValues() []interface{} {
 	return []interface{}{
-		&sql.NullInt64{},  // id
-		&sql.NullString{}, // name
+		&sql.NullInt64{}, // id
+	}
+}
+
+// fkValues returns the types for scanning foreign-keys values from sql.Rows.
+func (*Group) fkValues() []interface{} {
+	return []interface{}{
+		&sql.NullInt64{}, // user_groups
 	}
 }
 
@@ -60,17 +44,15 @@ func (gr *Group) assignValues(values ...interface{}) error {
 	}
 	gr.ID = int(value.Int64)
 	values = values[1:]
-	if value, ok := values[0].(*sql.NullString); !ok {
-		return fmt.Errorf("unexpected type %T for field name", values[0])
-	} else if value.Valid {
-		gr.Name = value.String
+	if len(values) == len(group.ForeignKeys) {
+		if value, ok := values[0].(*sql.NullInt64); !ok {
+			return fmt.Errorf("unexpected type %T for edge-field user_groups", value)
+		} else if value.Valid {
+			gr.user_groups = new(int)
+			*gr.user_groups = int(value.Int64)
+		}
 	}
 	return nil
-}
-
-// QueryUsers queries the users edge of the Group.
-func (gr *Group) QueryUsers() *UserQuery {
-	return (&GroupClient{config: gr.config}).QueryUsers(gr)
 }
 
 // Update returns a builder for updating this Group.
@@ -96,8 +78,6 @@ func (gr *Group) String() string {
 	var builder strings.Builder
 	builder.WriteString("Group(")
 	builder.WriteString(fmt.Sprintf("id=%v", gr.ID))
-	builder.WriteString(", name=")
-	builder.WriteString(gr.Name)
 	builder.WriteByte(')')
 	return builder.String()
 }

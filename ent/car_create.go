@@ -4,11 +4,8 @@ package ent
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"go_echo_ent/ent/car"
-	"go_echo_ent/ent/user"
-	"time"
 
 	"github.com/facebook/ent/dialect/sql/sqlgraph"
 	"github.com/facebook/ent/schema/field"
@@ -19,37 +16,6 @@ type CarCreate struct {
 	config
 	mutation *CarMutation
 	hooks    []Hook
-}
-
-// SetModel sets the model field.
-func (cc *CarCreate) SetModel(s string) *CarCreate {
-	cc.mutation.SetModel(s)
-	return cc
-}
-
-// SetRegisteredAt sets the registered_at field.
-func (cc *CarCreate) SetRegisteredAt(t time.Time) *CarCreate {
-	cc.mutation.SetRegisteredAt(t)
-	return cc
-}
-
-// SetOwnerID sets the owner edge to User by id.
-func (cc *CarCreate) SetOwnerID(id int) *CarCreate {
-	cc.mutation.SetOwnerID(id)
-	return cc
-}
-
-// SetNillableOwnerID sets the owner edge to User by id if the given value is not nil.
-func (cc *CarCreate) SetNillableOwnerID(id *int) *CarCreate {
-	if id != nil {
-		cc = cc.SetOwnerID(*id)
-	}
-	return cc
-}
-
-// SetOwner sets the owner edge to User.
-func (cc *CarCreate) SetOwner(u *User) *CarCreate {
-	return cc.SetOwnerID(u.ID)
 }
 
 // Mutation returns the CarMutation object of the builder.
@@ -99,12 +65,6 @@ func (cc *CarCreate) SaveX(ctx context.Context) *Car {
 }
 
 func (cc *CarCreate) preSave() error {
-	if _, ok := cc.mutation.Model(); !ok {
-		return &ValidationError{Name: "model", err: errors.New("ent: missing required field \"model\"")}
-	}
-	if _, ok := cc.mutation.RegisteredAt(); !ok {
-		return &ValidationError{Name: "registered_at", err: errors.New("ent: missing required field \"registered_at\"")}
-	}
 	return nil
 }
 
@@ -132,41 +92,6 @@ func (cc *CarCreate) createSpec() (*Car, *sqlgraph.CreateSpec) {
 			},
 		}
 	)
-	if value, ok := cc.mutation.Model(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeString,
-			Value:  value,
-			Column: car.FieldModel,
-		})
-		c.Model = value
-	}
-	if value, ok := cc.mutation.RegisteredAt(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeTime,
-			Value:  value,
-			Column: car.FieldRegisteredAt,
-		})
-		c.RegisteredAt = value
-	}
-	if nodes := cc.mutation.OwnerIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   car.OwnerTable,
-			Columns: []string{car.OwnerColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: &sqlgraph.FieldSpec{
-					Type:   field.TypeInt,
-					Column: user.FieldID,
-				},
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	return c, _spec
 }
 
