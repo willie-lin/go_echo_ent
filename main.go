@@ -6,6 +6,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"go_echo_ent/ent"
 	"go_echo_ent/ent/car"
+	"go_echo_ent/ent/group"
 	"go_echo_ent/ent/user"
 	"log"
 	"time"
@@ -27,7 +28,7 @@ func main() {
 	}
 }
 
-func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error ) {
+func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
 	u, err := client.User.Create().SetAge(30).SetName("a8m").Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed creating user: %v", err)
@@ -36,7 +37,7 @@ func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error ) {
 	return u, nil
 }
 
-func QueryUser(ctx context.Context, client *ent.Client) (*ent.User, error)  {
+func QueryUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
 	u, err := client.User.Query().Where(user.NameEQ("a8m")).Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed querying user: %v", err)
@@ -80,7 +81,7 @@ func CreateCars(ctx context.Context, client *ent.Client) (*ent.User, error) {
 	return a8m, nil
 }
 
-func QueryCars(ctx context.Context, a8m *ent.User) error  {
+func QueryCars(ctx context.Context, a8m *ent.User) error {
 	cars, err := a8m.QueryCars().All(ctx)
 	if err != nil {
 		return fmt.Errorf("failed querying user cars: %v", err)
@@ -88,7 +89,7 @@ func QueryCars(ctx context.Context, a8m *ent.User) error  {
 	log.Println("returned cars:", cars)
 
 	// what about filtering specific cars.
-	ford,err := a8m.QueryCars().
+	ford, err := a8m.QueryCars().
 		Where(car.ModelEQ("Ford")).
 		Only(ctx)
 	if err != nil {
@@ -99,7 +100,7 @@ func QueryCars(ctx context.Context, a8m *ent.User) error  {
 	return nil
 }
 
-func QueryCarUsers(ctx context.Context, a8m *ent.User) error  {
+func QueryCarUsers(ctx context.Context, a8m *ent.User) error {
 	cars, err := a8m.QueryCars().All(ctx)
 	if err != nil {
 		return fmt.Errorf("failed querying user cars: %v", err)
@@ -111,5 +112,82 @@ func QueryCarUsers(ctx context.Context, a8m *ent.User) error  {
 		}
 		log.Printf("car %q owner: %q\n", ca.Model, owner.Name)
 	}
+	return nil
+}
+
+func CreateGraph(ctx context.Context, client *ent.Client) error {
+
+	a8m, err := client.User.
+		Create().SetAge(30).
+		SetName("Ariel").
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+	neta, err := client.User.Create().SetAge(28).SetName("Neta").Save(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = client.Car.Create().SetModel("Tesla").SetRegisteredAt(time.Now()).SetOwner(a8m).Save(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = client.Car.Create().SetModel("Mazda").SetRegisteredAt(time.Now()).SetOwner(a8m).Save(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = client.Car.Create().SetModel("Ford").SetRegisteredAt(time.Now()).SetOwner(neta).Save(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = client.Group.Create().SetName("Gitlab").AddUsers(neta, a8m).Save(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = client.Group.Create().SetName("Github").AddUsers(a8m).Save(ctx)
+	if err != nil {
+		return err
+	}
+	log.Println("The graph was created successfully!")
+	return nil
+
+}
+
+// 获取名为GitHub 组内的所有汽车
+func QueryGithub(ctx context.Context, client *ent.Client) error {
+
+	cars, err := client.Group.Query().Where(group.Name("Github")).QueryUsers().QueryCars().All(ctx)
+	if err != nil {
+		return fmt.Errorf("failed getting cars: %v", err)
+	}
+	log.Println("cars returned:", cars)
+	return nil
+}
+
+// 便遍历的源是用户Ariel：
+func QueryArielCars(ctx context.Context, client *ent.Client) error {
+
+	a8m, err := client.User.Query().Where(user.HasCars(), user.Name("Ariel")).Only(ctx)
+
+	cars, err := a8m.QueryGroups().QueryUsers().QueryCars().Where(car.Not(car.ModelEQ("Mazda"))).All(ctx)
+
+	if err != nil {
+		return fmt.Errorf("failed getting cars: %v", err)
+	}
+	log.Println("cars returned:", cars)
+	return nil
+}
+
+func QueryGroupWithUsers(ctx context.Context, client *ent.Client) error {
+	groups, err := client.Group.
+		Query().
+		Where(group.HasUsers()).
+		All(ctx)
+	if err != nil {
+		return fmt.Errorf("failed getting groups: %v", err)
+	}
+	log.Println("groups returned:", groups)
+	// Output: (Group(Name=GitHub), Group(Name=GitLab),)
 	return nil
 }
