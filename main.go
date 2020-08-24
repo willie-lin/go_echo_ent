@@ -13,6 +13,7 @@ func main() {
 	fmt.Println("aaaaa")
 
 	client, err := datasource.Clients()
+
 	if err != nil {
 		panic(err)
 	}
@@ -21,6 +22,8 @@ func main() {
 	fmt.Println(client)
 	fmt.Println("eeee")
 	ctx := context.Background()
+
+	migrate := datasource.Migrate
 	migrate(client, ctx)
 
 	CreateUser(ctx, client)
@@ -28,12 +31,6 @@ func main() {
 
 	fmt.Println("bbbbb")
 
-}
-
-func migrate(client *ent.Client, ctx context.Context) {
-	if err := client.Schema.Create(ctx); err != nil {
-		log.Fatalf("failed creating schema resources: %v", err)
-	}
 }
 
 func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error) {

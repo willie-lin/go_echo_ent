@@ -1,10 +1,12 @@
 package datasource
 
 import (
+	"context"
 	"fmt"
 	"github.com/facebook/ent/dialect/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"go_echo_ent/ent"
+	"log"
 	"time"
 )
 
@@ -61,3 +63,9 @@ func Clients() (*ent.Client, error) {
 //	drv := entsql.OpenDB(driverName, db)
 //	return ent.NewClient(ent.Driver(drv)), nil
 //}
+
+func Migrate(client *ent.Client, ctx context.Context) {
+	if err := client.Schema.Create(ctx); err != nil {
+		log.Fatalf("failed creating schema resources: %v", err)
+	}
+}
