@@ -23,8 +23,6 @@ func main() {
 	ctx := context.Background()
 	migrate(client, ctx)
 
-	//CreateCars(ctx, client)
-	//fmt.Println("eeeee")
 	CreateUser(ctx, client)
 	println(CreateUser(ctx, client))
 
