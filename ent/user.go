@@ -22,8 +22,14 @@ type User struct {
 	Name string `json:"name,omitempty"`
 	// Username holds the value of the "username" field.
 	Username string `json:"username,omitempty"`
+	// Email holds the value of the "email" field.
+	Email string `json:"email,omitempty"`
+	// Password holds the value of the "password" field.
+	Password string `json:"password,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// UpdatedAt holds the value of the "updated_at" field.
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserQuery when eager-loading is set.
 	Edges UserEdges `json:"edges"`
@@ -65,7 +71,10 @@ func (*User) scanValues() []interface{} {
 		&sql.NullInt64{},  // age
 		&sql.NullString{}, // name
 		&sql.NullString{}, // username
+		&sql.NullString{}, // email
+		&sql.NullString{}, // password
 		&sql.NullTime{},   // created_at
+		&sql.NullTime{},   // updated_at
 	}
 }
 
@@ -96,10 +105,25 @@ func (u *User) assignValues(values ...interface{}) error {
 	} else if value.Valid {
 		u.Username = value.String
 	}
-	if value, ok := values[3].(*sql.NullTime); !ok {
-		return fmt.Errorf("unexpected type %T for field created_at", values[3])
+	if value, ok := values[3].(*sql.NullString); !ok {
+		return fmt.Errorf("unexpected type %T for field email", values[3])
+	} else if value.Valid {
+		u.Email = value.String
+	}
+	if value, ok := values[4].(*sql.NullString); !ok {
+		return fmt.Errorf("unexpected type %T for field password", values[4])
+	} else if value.Valid {
+		u.Password = value.String
+	}
+	if value, ok := values[5].(*sql.NullTime); !ok {
+		return fmt.Errorf("unexpected type %T for field created_at", values[5])
 	} else if value.Valid {
 		u.CreatedAt = value.Time
+	}
+	if value, ok := values[6].(*sql.NullTime); !ok {
+		return fmt.Errorf("unexpected type %T for field updated_at", values[6])
+	} else if value.Valid {
+		u.UpdatedAt = value.Time
 	}
 	return nil
 }
@@ -143,8 +167,14 @@ func (u *User) String() string {
 	builder.WriteString(u.Name)
 	builder.WriteString(", username=")
 	builder.WriteString(u.Username)
+	builder.WriteString(", email=")
+	builder.WriteString(u.Email)
+	builder.WriteString(", password=")
+	builder.WriteString(u.Password)
 	builder.WriteString(", created_at=")
 	builder.WriteString(u.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", updated_at=")
+	builder.WriteString(u.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

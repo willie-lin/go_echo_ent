@@ -3,13 +3,18 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/labstack/echo/v4"
 	"go_echo_ent/datasource"
 	"go_echo_ent/ent"
 	"go_echo_ent/ent/user"
 	"log"
+	"net/http"
 )
 
 func main() {
+
+	e := echo.New()
+
 	fmt.Println("aaaaa")
 
 	client, err := datasource.Clients()
@@ -30,6 +35,12 @@ func main() {
 	println(CreateUser(ctx, client))
 
 	fmt.Println("bbbbb")
+
+	e.GET("/", func(c echo.Context) error {
+		return c.String(http.StatusOK, "hello world!!!")
+	})
+
+	e.Logger.Fatal(e.Start(":1323"))
 
 }
 
