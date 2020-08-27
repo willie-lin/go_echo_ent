@@ -7,6 +7,7 @@ import (
 	"go_echo_ent/datasource"
 	"go_echo_ent/ent"
 	"go_echo_ent/ent/user"
+	"go_echo_ent/handler"
 	"log"
 	"net/http"
 )
@@ -31,27 +32,28 @@ func main() {
 	migrate := datasource.Migrate
 	migrate(client, ctx)
 
-	CreateUser(ctx, client)
-	println(CreateUser(ctx, client))
+	//CreateUser(ctx, client)
+	//println(CreateUser(ctx, client_model))
 
 	fmt.Println("bbbbb")
 
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "hello world!!!")
 	})
+	e.POST("/ww", handler.CreateUser())
 
-	e.Logger.Fatal(e.Start(":1323"))
+	e.Logger.Fatal(e.Start(":2020"))
 
 }
 
-func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
-	u, err := client.User.Create().SetAge(30).SetName("a8m").Save(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed creating user: %v", err)
-	}
-	log.Println("user was created: ", u)
-	return u, nil
-}
+//func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
+//	u, err := client.User.Create().SetAge(30).SetName("a8m").Save(ctx)
+//	if err != nil {
+//		return nil, fmt.Errorf("failed creating user: %v", err)
+//	}
+//	log.Println("user was created: ", u)
+//	return u, nil
+//}
 
 func QueryUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
 	u, err := client.User.Query().Where(user.NameEQ("a8m")).Only(ctx)
