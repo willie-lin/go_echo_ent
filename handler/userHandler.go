@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
 /**
@@ -40,16 +41,69 @@ func CreateUser() echo.HandlerFunc {
 		fmt.Println("user:", &user)
 		fmt.Println("user:", user.Name)
 
-		u, err := client.User.Create().SetName(user.Name).SetAge(user.Age).Save(context.Background())
-		fmt.Println(u)
+		uc := client.User.Create()
+
+		uc.SetAge(user.Age).SetName(user.Name).SetUsername(user.Username).SetEmail(user.Email).
+			SetPassword(user.Password).
+			SetCreatedAt(time.Now()).
+			SetUpdatedAt(time.Now())
+		_, err = uc.Save(context.Background())
 		if err != nil {
-			fmt.Errorf("failed creating the User: %v", err)
+			return fmt.Errorf("failed createing the group: %V", err)
 		}
-		log.Println("user was created: ", &u)
+		fmt.Println(uc)
+
+		//u := client.User.Create()
+		//u.SetName(user.Name)
+		//u.SetUsername(user.Username)
+		//u.SetAge(user.Age).SetEmail("").SetPassword("qqqqq").SetCreatedAt(time.Now()).SetUpdatedAt(time.Now())
+		//_, err = u.Save(context.Background())
+		//if err != nil {
+		//	log.Fatal(err)
+		//}
+
+		//u := client.User.Create()
+		//u.SetName("aaa")
+		//u.SetUsername("bbb")
+		//u.SetAge(11).SetEmail("").SetPassword("qqqqq").SetCreatedAt(time.Now()).SetUpdatedAt(time.Now())
+		//_, err = u.Save(context.Background())
+		//if err != nil {
+		//	log.Fatal(err)
+		//}
+
+		//client.User.
+		//	Create().
+		//	SetAge(30).
+		//	SetName("a8m").
+		//	Save(context.Background())
+		//if err != nil {
+		//	return fmt.Errorf("failed creating user: %v", err)
+		//}
+		//log.Println("user was created: ", u)
+
+		//u, err := client.User.Create().SetName(user.Name).SetAge(user.Age).Save(context.Background())
+		//fmt.Println(u)
+		//if err != nil {
+		//	fmt.Errorf("failed creating the User: %v", err)
+		//}
+		//log.Println("user was created: ", &u)
 
 		return c.JSON(http.StatusOK, &user)
 
 	}
+}
+
+func CreateUser1(ctx context.Context, client *ent.Client) (*ent.User, error) {
+	u, err := client.User.
+		Create().
+		SetAge(30).
+		SetName("a8m").
+		Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed creating user: %v", err)
+	}
+	log.Println("user was created: ", u)
+	return u, nil
 }
 
 func CreateUsers(user *ent.User, ctx context.Context, client *ent.Client) (*ent.User, error) {
