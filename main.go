@@ -41,6 +41,7 @@ func main() {
 		return c.String(http.StatusOK, "hello world!!!")
 	})
 	e.POST("/ww", handler.CreateUser())
+	e.GET("/user/:username", handler.GetUserById())
 
 	e.Logger.Fatal(e.Start(":2020"))
 

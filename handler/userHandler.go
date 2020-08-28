@@ -8,7 +8,6 @@ import (
 	"go_echo_ent/datasource"
 	"go_echo_ent/ent"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 )
@@ -93,32 +92,39 @@ func CreateUser() echo.HandlerFunc {
 	}
 }
 
-func CreateUser1(ctx context.Context, client *ent.Client) (*ent.User, error) {
-	u, err := client.User.
-		Create().
-		SetAge(30).
-		SetName("a8m").
-		Save(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed creating user: %v", err)
-	}
-	log.Println("user was created: ", u)
-	return u, nil
-}
-
-func CreateUsers(user *ent.User, ctx context.Context, client *ent.Client) (*ent.User, error) {
-
-	u, err := client.User.Create().SetAge(30).SetName("a8m").Save(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed creating user: %v", err)
-	}
-	log.Println("user was created: ", u)
-	return u, nil
-}
-
 // 根据用户ID查询用户
-func getUserById() {
+func GetUserById() echo.HandlerFunc {
+	return func(c echo.Context) error {
 
+		//client, err := datasource.Clients()
+		//
+		//if err != nil {
+		//	panic(err)
+		//}
+
+		//un := c.FormValue("username")
+		un := c.Param("username")
+		//user := new(ent.User)
+		////
+		//result, err := ioutil.ReadAll(c.Request().Body)
+		//if err != nil {
+		//	fmt.Println("ioutil.ReadAll :", err)
+		//	return err
+		//}
+		//err = json.Unmarshal(result, &user)
+		//if err != nil {
+		//	fmt.Println("json.Unmarshal ", err)
+		//	return err
+		//}
+		////fmt.Println("user:", &user)
+		//fmt.Println("user:", user.Username)
+
+		fmt.Println("un:", un)
+		//u, err := client.User.Query().Where(name)
+
+		return c.JSON(http.StatusOK, un)
+
+	}
 }
 
 // 根据用户名查询用户

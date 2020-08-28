@@ -20,9 +20,9 @@ func (User) Fields() []ent.Field {
 		field.String("name"),
 		field.String("username").Unique(),
 		field.String("email").MaxLen(40),
-		field.String("password").MaxLen(128),
+		field.String("password").MaxLen(128).Sensitive(),
 		field.Time("created_at").Default(time.Now),
-		field.Time("updated_at").UpdateDefault(time.Now),
+		field.Time("updated_at").Default(time.Now).UpdateDefault(time.Now),
 	}
 }
 
