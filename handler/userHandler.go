@@ -104,6 +104,7 @@ func GetUserById() echo.HandlerFunc {
 
 		//un := c.FormValue("username")
 		un := c.Param("username")
+
 		//user := new(ent.User)
 		////
 		//result, err := ioutil.ReadAll(c.Request().Body)
