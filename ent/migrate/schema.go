@@ -45,7 +45,7 @@ var (
 		{Name: "age", Type: field.TypeInt},
 		{Name: "name", Type: field.TypeString},
 		{Name: "username", Type: field.TypeString, Unique: true},
-		{Name: "email", Type: field.TypeString, Size: 40},
+		{Name: "email", Type: field.TypeString, Size: 80},
 		{Name: "password", Type: field.TypeString, Size: 128},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},

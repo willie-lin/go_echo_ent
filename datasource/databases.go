@@ -6,6 +6,7 @@ import (
 	"github.com/facebook/ent/dialect/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"go_echo_ent/ent"
+	"go_echo_ent/ent/migrate"
 	"log"
 	"time"
 )
@@ -64,8 +65,19 @@ func Clients() (*ent.Client, error) {
 //	return ent.NewClient(ent.Driver(drv)), nil
 //}
 
-func Migrate(client *ent.Client, ctx context.Context) {
+func AutoMigration(client *ent.Client, ctx context.Context) {
 	if err := client.Schema.Create(ctx); err != nil {
+		log.Fatalf("failed creating schema resources: %v", err)
+	}
+}
+
+func DebugMode(err error, client *ent.Client, ctx context.Context) {
+	err = client.Debug().Schema.Create(
+		ctx,
+		migrate.WithDropIndex(true),
+		migrate.WithDropColumn(true),
+	)
+	if err != nil {
 		log.Fatalf("failed creating schema resources: %v", err)
 	}
 }

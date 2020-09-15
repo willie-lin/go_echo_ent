@@ -7,7 +7,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"go_echo_ent/datasource"
 	"go_echo_ent/ent"
+	"go_echo_ent/ent/user"
+	_ "go_echo_ent/ent/user"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -77,7 +80,9 @@ func UpdateUser() echo.HandlerFunc {
 			return err
 		}
 
-		us, err := client.User.UpdateOne(user).SetAge(user.Age).Save(context.Background())
+		us, err := client.User.
+			UpdateOneID(1).
+			SetAge(user.Age).Save(context.Background())
 		if err != nil {
 			return fmt.Errorf("failed update the user: %V", err)
 
@@ -88,58 +93,76 @@ func UpdateUser() echo.HandlerFunc {
 
 }
 
-// 根据用户ID查询用户
-func GetUserById() echo.HandlerFunc {
+// 查询所有用户
+func GetAllUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
 
-		//client, err := datasource.Clients()
-		//
-		//if err != nil {
-		//	panic(err)
-		//}
+		client, err := datasource.Clients()
 
-		//un := c.FormValue("username")
-		un := c.Param("username")
-
+		if err != nil {
+			panic(err)
+		}
 		//user := new(ent.User)
-		////
-		//result, err := ioutil.ReadAll(c.Request().Body)
-		//if err != nil {
-		//	fmt.Println("ioutil.ReadAll :", err)
-		//	return err
-		//}
-		//err = json.Unmarshal(result, &user)
-		//if err != nil {
-		//	fmt.Println("json.Unmarshal ", err)
-		//	return err
-		//}
-		////fmt.Println("user:", &user)
-		//fmt.Println("user:", user.Username)
+		users, err := client.User.Query().All(context.Background())
 
-		fmt.Println("un:", un)
-		//u, err := client.User.Query().Where(name)
+		return c.JSON(http.StatusOK, users)
+	}
+}
 
-		return c.JSON(http.StatusOK, un)
+// 根据用户ID查询用户
+func GetUserByName() echo.HandlerFunc {
+	return func(c echo.Context) error {
+
+		client, err := datasource.Clients()
+
+		if err != nil {
+			panic(err)
+		}
+
+		un := c.FormValue("name")
+
+		fmt.Println(un)
+		us, err := client.User.Query().Where(user.NameEQ(un)).Only(context.Background())
+		if err != nil {
+			return fmt.Errorf("failed querying user: %v", err)
+		}
+		log.Println("user returned: ", us)
+		return c.JSON(http.StatusOK, us)
 
 	}
 }
 
 // 根据用户名查询用户
-func getUserByUserName() {
+func GetUserByUserName() echo.HandlerFunc {
+	return func(c echo.Context) error {
 
+		client, err := datasource.Clients()
+		//user := new(ent.User)
+
+		if err != nil {
+			panic(err)
+		}
+		un := c.FormValue("username")
+		fmt.Println(un)
+		us, err := client.User.Query().Where(user.UsernameEQ(un)).Only(context.Background())
+		if err != nil {
+			return fmt.Errorf("failed querying user: %v", err)
+		}
+		log.Println("user returned: ", us)
+		return c.JSON(http.StatusOK, us)
+	}
 }
 
 //  根据用户邮箱进行查询用户
-func getUserByEmail() {
+func GetUserByEmail() echo.HandlerFunc {
+	return func(c echo.Context) error {
 
+		return nil
+	}
 }
 
 //func getUserById()  {
 //}
-
-func getAllUser() {
-
-}
 
 func deleteUser() {
 

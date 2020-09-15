@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go_echo_ent/datasource"
 	"go_echo_ent/ent"
+
 	"go_echo_ent/ent/user"
 	"go_echo_ent/handler"
 	"log"
@@ -29,8 +30,12 @@ func main() {
 	fmt.Println("eeee")
 	ctx := context.Background()
 
-	migrate := datasource.Migrate
-	migrate(client, ctx)
+	autoMigration := datasource.AutoMigration
+	autoMigration(client, ctx)
+
+	debugMode := datasource.DebugMode
+
+	debugMode(err, client, ctx)
 
 	//CreateUser(ctx, client)
 	//println(CreateUser(ctx, client_model))
@@ -40,8 +45,14 @@ func main() {
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "hello world!!!")
 	})
-	e.POST("/ww", handler.CreateUser())
-	e.GET("/user/:username", handler.GetUserById())
+	e.GET("/users", handler.GetAllUser())
+	e.POST("/user", handler.CreateUser())
+	//e.GET("/user/:username", handler.GetUserById())
+	e.GET("/users/:username", handler.GetUserByUserName())
+	e.GET("/user", handler.GetUserByUserName())
+	e.GET("/user/name", handler.GetUserByName())
+	e.GET("/user", handler.GetUserByEmail())
+	e.PUT("/user", handler.UpdateUser())
 
 	e.Logger.Fatal(e.Start(":2020"))
 
