@@ -8,7 +8,6 @@ import (
 	"go_echo_ent/datasource"
 	"go_echo_ent/ent"
 	"go_echo_ent/ent/user"
-	_ "go_echo_ent/ent/user"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -67,26 +66,27 @@ func UpdateUser() echo.HandlerFunc {
 		if err != nil {
 			panic(err)
 		}
-		user := new(ent.User)
+		u := new(ent.User)
 
 		result, err := ioutil.ReadAll(c.Request().Body)
 		if err != nil {
 			fmt.Println("ioutil.ReadAll :", err)
 			return err
 		}
-		err = json.Unmarshal(result, &user)
+		err = json.Unmarshal(result, &u)
 		if err != nil {
 			fmt.Println("json.Unmarshal ", err)
 			return err
 		}
 
 		us, err := client.User.
-			UpdateOneID(1).
-			SetAge(user.Age).Save(context.Background())
+			Update().
+			Where(user.UsernameEQ(u.Username)).
+			SetAge(u.Age).Save(context.Background())
 		if err != nil {
-			return fmt.Errorf("failed update the user: %V", err)
-
+			return fmt.Errorf("failed querying user: %v", err)
 		}
+		log.Println("user returned: ", us)
 		return c.JSON(http.StatusOK, us)
 
 	}
@@ -109,7 +109,7 @@ func GetAllUser() echo.HandlerFunc {
 	}
 }
 
-// 根据用户ID查询用户
+// 根据用户名查询用户
 func GetUserByName() echo.HandlerFunc {
 	return func(c echo.Context) error {
 
