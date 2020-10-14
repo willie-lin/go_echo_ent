@@ -5,25 +5,29 @@ import (
 	"fmt"
 	"github.com/facebook/ent/dialect/sql"
 	_ "github.com/go-sql-driver/mysql"
+
 	"go_echo_ent/ent"
 	"go_echo_ent/ent/migrate"
+	"go_echo_ent/global"
 	"log"
 	"time"
 )
 
-//func Client() *ent.Client {
-//	client, err := ent.Open("sqlite3", "file:ent?mode=memory&cache=shared&_fk=1")
-//	if err != nil {
-//		log.Fatalf("failed opening connection to sqlite: %v", err)
-//	}
-//
-//	defer client.Close()
-//
-//	if err := client.Schema.Create(context.Background()); err != nil {
-//		log.Fatalf("failed creating schema resources: %v", err)
-//	}
-//	return client
-//}
+func Client() (func(), error) {
+
+	var err error
+
+	global.Entc, err = ent.Open("mysql", "root:root1234@tcp(127.0.0.1:3306)/ent?charset=utf8&parseTime=true")
+	if err != nil {
+		log.Fatalf("failed opening connection to sqlite: %v", err)
+		return nil, err
+	}
+
+	if err = global.Entc.Schema.Create(context.Background()); err != nil {
+		log.Fatalf("failed creating schema resources: %v", err)
+	}
+	return nil, err
+}
 
 const (
 	driverName      = "mysql"

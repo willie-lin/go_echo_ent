@@ -155,11 +155,11 @@ func (cuo *CarUpdateOne) Save(ctx context.Context) (*Car, error) {
 
 // SaveX is like Save, but panics if an error occurs.
 func (cuo *CarUpdateOne) SaveX(ctx context.Context) *Car {
-	c, err := cuo.Save(ctx)
+	node, err := cuo.Save(ctx)
 	if err != nil {
 		panic(err)
 	}
-	return c
+	return node
 }
 
 // Exec executes the query on the entity.
@@ -175,7 +175,7 @@ func (cuo *CarUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
-func (cuo *CarUpdateOne) sqlSave(ctx context.Context) (c *Car, err error) {
+func (cuo *CarUpdateOne) sqlSave(ctx context.Context) (_node *Car, err error) {
 	_spec := &sqlgraph.UpdateSpec{
 		Node: &sqlgraph.NodeSpec{
 			Table:   car.Table,
@@ -191,9 +191,9 @@ func (cuo *CarUpdateOne) sqlSave(ctx context.Context) (c *Car, err error) {
 		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Car.ID for update")}
 	}
 	_spec.Node.ID.Value = id
-	c = &Car{config: cuo.config}
-	_spec.Assign = c.assignValues
-	_spec.ScanValues = c.scanValues()
+	_node = &Car{config: cuo.config}
+	_spec.Assign = _node.assignValues
+	_spec.ScanValues = _node.scanValues()
 	if err = sqlgraph.UpdateNode(ctx, cuo.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{car.Label}
@@ -202,5 +202,5 @@ func (cuo *CarUpdateOne) sqlSave(ctx context.Context) (c *Car, err error) {
 		}
 		return nil, err
 	}
-	return c, nil
+	return _node, nil
 }

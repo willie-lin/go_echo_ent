@@ -38,8 +38,8 @@ func CreateUser() echo.HandlerFunc {
 			fmt.Println("json.Unmarshal ", err)
 			return err
 		}
-		fmt.Println("user:", &user)
-		fmt.Println("user:", user.Name)
+		fmt.Println("user:", user)
+		//fmt.Println("user:", user.Name)
 
 		uc := client.User.Create()
 
@@ -51,7 +51,7 @@ func CreateUser() echo.HandlerFunc {
 		if err != nil {
 			return fmt.Errorf("failed createing the group: %V", err)
 		}
-		fmt.Println(uc)
+		//fmt.Println(uc)
 
 		return c.JSON(http.StatusOK, &user)
 
@@ -109,6 +109,21 @@ func GetAllUser() echo.HandlerFunc {
 	}
 }
 
+//// 查询所有用户
+//func FindAllUser() echo.HandlerFunc {
+//	return func(c echo.Context) error {
+//
+//		users, err := global.Entc.User.Query().All(context.Background())
+//		//users, err := global.Entc.User.Query().All(context.Background())
+//		//users, err := client.User.Query().All(context.Background())
+//		if err != nil {
+//			return fmt.Errorf("failed query all  user: %v", err)
+//		}
+//
+//		return c.JSON(http.StatusOK, users)
+//	}
+//}
+
 // 根据用户名查询用户
 func GetUserByName() echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -156,14 +171,80 @@ func GetUserByUserName() echo.HandlerFunc {
 //  根据用户邮箱进行查询用户
 func GetUserByEmail() echo.HandlerFunc {
 	return func(c echo.Context) error {
+		client, err := datasource.Clients()
+		//user := new(ent.User)
+		if err != nil {
+			panic(err)
+		}
+		u := new(ent.User)
+		result, err := ioutil.ReadAll(c.Request().Body)
+		if err != nil {
+			fmt.Println("ioutil.ReadAll :", err)
+			return err
+		}
+		err = json.Unmarshal(result, &u)
+		if err != nil {
+			fmt.Println("json 解析错误", err)
+			return err
+		}
+		fmt.Println(u)
 
-		return nil
+		us, err := client.User.Query().Where(user.EmailEQ(u.Email)).Only(context.Background())
+		if err != nil {
+			return fmt.Errorf("failed querying user: %v", err)
+			return err
+		}
+
+		return c.JSON(http.StatusOK, us)
 	}
 }
 
 //func getUserById()  {
 //}
 
-func deleteUser() {
+func DeleteUser() echo.HandlerFunc {
+	return func(c echo.Context) error {
 
+		client, err := datasource.Clients()
+
+		if err != nil {
+			panic(err)
+		}
+		u := new(ent.User)
+
+		result, err := ioutil.ReadAll(c.Request().Body)
+		if err != nil {
+			fmt.Println("ioutil readall 错误！！！")
+			return err
+		}
+
+		err = json.Unmarshal(result, &u)
+		if err != nil {
+			fmt.Println("Json 解析错误！！！")
+			return err
+		}
+		//user, err := client.User.Query().Where(user.NameEQ(u.Name)).All(context.Background())
+		//if err != nil {
+		//	fmt.Println("用查询出错！")
+		//}
+		//fmt.Println(user)
+		//err := client.User.DeleteOne(user).Exec(context.Background())
+		// 按人员删除
+		err = client.User.DeleteOne(u).Exec(context.Background())
+		if err != nil {
+			fmt.Println("删除出错！")
+			return err
+		}
+
+		//按ID删除
+		//err = client.User.DeleteOneID(u.ID).Exec(context.Background())
+		//if err != nil {
+		//	fmt.Println("删除失败！！！")
+		//	return err
+		//}
+		//fmt.Println(user)
+		return c.NoContent(http.StatusNoContent)
+
+		//return c.JSON(http.StatusOK,)
+	}
 }

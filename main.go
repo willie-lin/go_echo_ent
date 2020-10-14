@@ -19,9 +19,9 @@ func main() {
 	c := jaegertracing.New(e, nil)
 	defer c.Close()
 
+	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	e.Use(middleware.Logger())
 	e.Use(middleware.RequestID())
 
 	e.Use(middleware.Gzip())
@@ -54,12 +54,16 @@ func main() {
 		return c.String(http.StatusOK, "hello world!!!")
 	})
 	e.GET("/users", handler.GetAllUser())
+	//e.GET("/users1", handler.FindAllUser())
 	e.POST("/user", handler.CreateUser())
+	e.DELETE("/user", handler.DeleteUser())
 
 	e.GET("/user/username", handler.GetUserByUserName())
 	e.GET("/user/name", handler.GetUserByName())
-	e.GET("/user", handler.GetUserByEmail())
+	e.GET("/user/email", handler.GetUserByEmail())
 	e.PUT("/user", handler.UpdateUser())
+
+	defer client.Close()
 
 	e.Logger.Fatal(e.Start(":2020"))
 

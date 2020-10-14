@@ -504,8 +504,10 @@ type UserMutation struct {
 	clearedFields  map[string]struct{}
 	groups         map[int]struct{}
 	removedgroups  map[int]struct{}
+	clearedgroups  bool
 	friends        map[int]struct{}
 	removedfriends map[int]struct{}
+	clearedfriends bool
 	done           bool
 	oldValue       func(context.Context) (*User, error)
 }
@@ -878,6 +880,16 @@ func (m *UserMutation) AddGroupIDs(ids ...int) {
 	}
 }
 
+// ClearGroups clears the groups edge to Group.
+func (m *UserMutation) ClearGroups() {
+	m.clearedgroups = true
+}
+
+// GroupsCleared returns if the edge groups was cleared.
+func (m *UserMutation) GroupsCleared() bool {
+	return m.clearedgroups
+}
+
 // RemoveGroupIDs removes the groups edge to Group by ids.
 func (m *UserMutation) RemoveGroupIDs(ids ...int) {
 	if m.removedgroups == nil {
@@ -907,6 +919,7 @@ func (m *UserMutation) GroupsIDs() (ids []int) {
 // ResetGroups reset all changes of the "groups" edge.
 func (m *UserMutation) ResetGroups() {
 	m.groups = nil
+	m.clearedgroups = false
 	m.removedgroups = nil
 }
 
@@ -918,6 +931,16 @@ func (m *UserMutation) AddFriendIDs(ids ...int) {
 	for i := range ids {
 		m.friends[ids[i]] = struct{}{}
 	}
+}
+
+// ClearFriends clears the friends edge to User.
+func (m *UserMutation) ClearFriends() {
+	m.clearedfriends = true
+}
+
+// FriendsCleared returns if the edge friends was cleared.
+func (m *UserMutation) FriendsCleared() bool {
+	return m.clearedfriends
 }
 
 // RemoveFriendIDs removes the friends edge to User by ids.
@@ -949,6 +972,7 @@ func (m *UserMutation) FriendsIDs() (ids []int) {
 // ResetFriends reset all changes of the "friends" edge.
 func (m *UserMutation) ResetFriends() {
 	m.friends = nil
+	m.clearedfriends = false
 	m.removedfriends = nil
 }
 
@@ -1251,6 +1275,12 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 // mutation.
 func (m *UserMutation) ClearedEdges() []string {
 	edges := make([]string, 0, 2)
+	if m.clearedgroups {
+		edges = append(edges, user.EdgeGroups)
+	}
+	if m.clearedfriends {
+		edges = append(edges, user.EdgeFriends)
+	}
 	return edges
 }
 
@@ -1258,6 +1288,10 @@ func (m *UserMutation) ClearedEdges() []string {
 // cleared in this mutation.
 func (m *UserMutation) EdgeCleared(name string) bool {
 	switch name {
+	case user.EdgeGroups:
+		return m.clearedgroups
+	case user.EdgeFriends:
+		return m.clearedfriends
 	}
 	return false
 }
